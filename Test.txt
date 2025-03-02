@@ -1,1 +1,61 @@
-test
+Spécification du Traitement des Fichiers Excel pour l’Insertion des Scénarios
+
+1. Objectif
+
+Ce processus a pour but de lire et traiter un fichier Excel uploadé sur une plateforme, en extrayant les données pertinentes à partir de la troisième ligne du fichier et en insérant des informations dans une base de données.
+
+2. Entrée
+	•	Un fichier Excel contenant des scénarios.
+	•	À partir de la troisième ligne, la première colonne contient le libellé de scénario.
+	•	Une colonne particulière, appelée colonne de date d’horizon, est déterminée en amont pour marquer le début du traitement des colonnes.
+
+3. Traitement
+
+3.1. Parcours du fichier Excel
+	1.	Détermination du libellé de scénario
+	•	À chaque ligne, lire la première colonne.
+	•	Si la valeur est “delta” ou “delta choc”, la convertir en minuscules.
+	2.	Récupération du code scénario
+	•	Rechercher dans la table ref_scenario une ligne où :
+	•	Libellé de scénario correspond à celui extrait de la première colonne.
+	•	Type de scénario est une valeur préalablement calculée.
+	•	Si aucune correspondance n’est trouvée, logger un message :
+“Scénario inconnu”, et passer à la ligne suivante.
+	•	Sinon, récupérer le code scénario.
+	3.	Parcours des colonnes à partir de la colonne de date d’horizon
+	•	Initialiser une liste vide pour stocker les données.
+	•	Ajouter les éléments suivants à la liste :
+	•	0 (valeur initiale)
+	•	ID de l’index (calculé en amont)
+	•	Différence entre l’index de la colonne en cours et l’index de la colonne de date d’horizon +1
+	•	Code scénario (récupéré de ref_scenario)
+	4.	Gestion du numscenario
+	•	Si le libellé de scénario de la ligne actuelle est différent de celui de la ligne précédente :
+	•	Réinitialiser numscenario à 0.
+	•	Sinon :
+	•	Incrémenter numscenario.
+	5.	Lecture et validation des valeurs
+	•	Lire le contenu de la cellule (colonne en cours et ligne en cours).
+	•	Vérifier :
+	•	Si la valeur (rate) est comprise entre -1 et 1.
+	•	Ou si le code index (précédemment calculé) commence par “df_”.
+	•	Si ces conditions sont remplies, ajouter le rate à la liste.
+	•	Sinon, logger un message :
+“Le rate doit être entre -1 et 1”, car une anomalie est suspectée (confirmation nécessaire par une collègue).
+	6.	Insertion dans la liste des paramètres
+	•	Ajouter la liste créée dans un paramètre global scenario_insert_params pour une future insertion en base.
+
+4. Sortie
+	•	Un paramètre scenario_insert_params contenant toutes les données formatées pour insertion.
+	•	Logs des erreurs en cas de scénario inconnu ou de valeurs hors des bornes autorisées.
+
+5. Règles métier importantes
+	•	Seules les lignes à partir de la troisième ligne sont traitées.
+	•	La colonne de date d’horizon est le point de départ du parcours des colonnes.
+	•	Les scénarios “delta” et “delta choc” doivent être mis en minuscules.
+	•	Si un scénario est inconnu, un message d’erreur est loggé.
+	•	Le numscenario s’incrémente à chaque changement de ligne, sauf si le libellé de scénario change.
+	•	Le rate doit être compris entre -1 et 1, sauf exception liée aux codes index commençant par "df_".
+	•	Les erreurs liées aux valeurs hors bornes doivent être validées par une collègue.
+
+Cette spécification formelle définit précisément les étapes et les règles du traitement pour garantir une compréhension claire du fonctionnement du code.
